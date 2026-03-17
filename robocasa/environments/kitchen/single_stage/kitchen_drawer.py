@@ -159,6 +159,26 @@ class ManipulateDrawer(Kitchen):
                 return True
         return False
 
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def drawer_joint_qpos(obs_cache):
+            """Drawer opening state, normalized [0, 1]. 0=closed, 1=fully open."""
+            state = self.drawer.get_door_state(env=self)
+            return np.array(list(state.values()), dtype=np.float32)
+
+        sensors = [drawer_joint_qpos]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
+
     def _check_success(self):
         """
         Check if the drawer manipulation task is successful.

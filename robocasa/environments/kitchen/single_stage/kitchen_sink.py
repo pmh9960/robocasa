@@ -89,6 +89,32 @@ class ManipulateSinkFaucet(Kitchen):
 
         return cfgs
 
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def faucet_handle_joint(obs_cache):
+            """Faucet handle joint angle (0 to 2*pi). water_on when 0.40 < angle < pi."""
+            state = self.sink.get_handle_state(env=self)
+            return np.array([state["handle_joint"]], dtype=np.float32)
+
+        @sensor(modality=modality)
+        def faucet_water_on(obs_cache):
+            """Whether water is flowing. 1.0 = on, 0.0 = off."""
+            state = self.sink.get_handle_state(env=self)
+            return np.array([1.0 if state["water_on"] else 0.0], dtype=np.float32)
+
+        sensors = [faucet_handle_joint, faucet_water_on]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
+
     def _check_success(self):
         """
         Check if the sink faucet manipulation task is successful.
@@ -204,6 +230,32 @@ class TurnSinkSpout(Kitchen):
         )
 
         return cfgs
+
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def spout_joint(obs_cache):
+            """Spout joint angle (0 to 2*pi). Determines spout orientation (left/right/center)."""
+            state = self.sink.get_handle_state(env=self)
+            return np.array([state["spout_joint"]], dtype=np.float32)
+
+        @sensor(modality=modality)
+        def faucet_handle_joint(obs_cache):
+            """Faucet handle joint angle (0 to 2*pi)."""
+            state = self.sink.get_handle_state(env=self)
+            return np.array([state["handle_joint"]], dtype=np.float32)
+
+        sensors = [spout_joint, faucet_handle_joint]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
 
     def _check_success(self):
         """

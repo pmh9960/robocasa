@@ -38,6 +38,26 @@ class PnPCounterToCab(PnP):
         self.cab_id = cab_id
         super().__init__(obj_groups=obj_groups, *args, **kwargs)
 
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def cab_door_joint(obs_cache):
+            """Cabinet door opening state, normalized [0, 1]."""
+            state = self.cab.get_door_state(env=self)
+            return np.array(list(state.values()), dtype=np.float32)
+
+        sensors = [cab_door_joint]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
+
     def _setup_kitchen_references(self):
         """
         Setup the kitchen references for the counter to cabinet pick and place task:
@@ -154,6 +174,26 @@ class PnPCabToCounter(PnP):
     ):
         self.cab_id = cab_id
         super().__init__(obj_groups=obj_groups, *args, **kwargs)
+
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def cab_door_joint(obs_cache):
+            """Cabinet door opening state, normalized [0, 1]."""
+            state = self.cab.get_door_state(env=self)
+            return np.array(list(state.values()), dtype=np.float32)
+
+        sensors = [cab_door_joint]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
 
     def _setup_kitchen_references(self):
         """
@@ -491,6 +531,26 @@ class PnPCounterToMicrowave(PnP):
     def __init__(self, obj_groups="food", *args, **kwargs):
         super().__init__(obj_groups=obj_groups, *args, **kwargs)
 
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def microwave_door_joint(obs_cache):
+            """Microwave door opening state, normalized [0, 1]."""
+            state = self.microwave.get_door_state(env=self)
+            return np.array([state["door"]], dtype=np.float32)
+
+        sensors = [microwave_door_joint]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
+
     def _setup_kitchen_references(self):
         """
         Setup the kitchen references for the counter to microwave pick and place task:
@@ -616,6 +676,26 @@ class PnPMicrowaveToCounter(PnP):
     def __init__(self, obj_groups="food", *args, **kwargs):
 
         super().__init__(obj_groups=obj_groups, *args, **kwargs)
+
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def microwave_door_joint(obs_cache):
+            """Microwave door opening state, normalized [0, 1]."""
+            state = self.microwave.get_door_state(env=self)
+            return np.array([state["door"]], dtype=np.float32)
+
+        sensors = [microwave_door_joint]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
 
     def _setup_kitchen_references(self):
         """

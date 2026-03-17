@@ -132,6 +132,26 @@ class CoffeePressButton(Kitchen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def _setup_observables(self):
+        observables = super()._setup_observables()
+        if not self.use_object_obs:
+            return observables
+
+        modality = "object"
+
+        @sensor(modality=modality)
+        def coffee_machine_turned_on(obs_cache):
+            """Whether coffee machine is on. 1.0 = on, 0.0 = off."""
+            state = self.coffee_machine.get_state()
+            return np.array([1.0 if state["turned_on"] else 0.0], dtype=np.float32)
+
+        sensors = [coffee_machine_turned_on]
+        names = [s.__name__ for s in sensors]
+        for name, s in zip(names, sensors):
+            observables[name] = Observable(name=name, sensor=s, sampling_rate=self.control_freq)
+
+        return observables
+
     def _setup_kitchen_references(self):
         """
         Setup the kitchen references for the coffee press button task. (Coffee machine and counter the coffee machine is on)
