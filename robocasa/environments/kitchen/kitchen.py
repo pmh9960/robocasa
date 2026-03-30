@@ -242,7 +242,9 @@ class Kitchen(ManipulationEnv, metaclass=KitchenEnvMeta):
         use_distractors=False,
         translucent_robot=False,
         randomize_cameras=False,
+        fixture_id=None,
     ):
+        self.fixture_id = fixture_id
         self.init_robot_base_pos = init_robot_base_pos
 
         # object placement initializer
@@ -1528,8 +1530,11 @@ class Kitchen(ManipulationEnv, metaclass=KitchenEnvMeta):
                     if self._is_fxtr_valid(self.fixtures[name], size)
                 ]
             assert len(matches) > 0
-            # sample random key
-            key = self.rng.choice(matches)
+            # pick by fixture_id index or sample randomly
+            if self.fixture_id is not None:
+                key = sorted(matches)[self.fixture_id % len(matches)]
+            else:
+                key = self.rng.choice(matches)
             return self.fixtures[key]
         else:
             ref_fixture = self.get_fixture(ref)
@@ -1559,6 +1564,8 @@ class Kitchen(ManipulationEnv, metaclass=KitchenEnvMeta):
             close_fixtures = [
                 fxtr for (fxtr, d) in zip(cand_fixtures, dists) if d - min_dist < 0.10
             ]
+            if self.fixture_id is not None:
+                return sorted(close_fixtures, key=lambda f: f.name)[self.fixture_id % len(close_fixtures)]
             return self.rng.choice(close_fixtures)
 
     def register_fixture_ref(self, ref_name, fn_kwargs):
