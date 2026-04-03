@@ -1531,10 +1531,14 @@ class Kitchen(ManipulationEnv, metaclass=KitchenEnvMeta):
                 ]
             assert len(matches) > 0
             # pick by fixture_id index or sample randomly
+            sorted_matches = sorted(matches)
             if self.fixture_id is not None:
-                key = sorted(matches)[self.fixture_id % len(matches)]
+                idx = self.fixture_id % len(sorted_matches)
+                key = sorted_matches[idx]
             else:
                 key = self.rng.choice(matches)
+                idx = sorted_matches.index(key)
+            self._last_fixture_idx = idx
             return self.fixtures[key]
         else:
             ref_fixture = self.get_fixture(ref)
@@ -1564,9 +1568,15 @@ class Kitchen(ManipulationEnv, metaclass=KitchenEnvMeta):
             close_fixtures = [
                 fxtr for (fxtr, d) in zip(cand_fixtures, dists) if d - min_dist < 0.10
             ]
+            sorted_close = sorted(close_fixtures, key=lambda f: f.name)
             if self.fixture_id is not None:
-                return sorted(close_fixtures, key=lambda f: f.name)[self.fixture_id % len(close_fixtures)]
-            return self.rng.choice(close_fixtures)
+                idx = self.fixture_id % len(sorted_close)
+                selected = sorted_close[idx]
+            else:
+                selected = self.rng.choice(close_fixtures)
+                idx = next(i for i, f in enumerate(sorted_close) if f is selected)
+            self._last_fixture_idx = idx
+            return selected
 
     def register_fixture_ref(self, ref_name, fn_kwargs):
         """
