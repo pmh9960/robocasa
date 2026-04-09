@@ -83,9 +83,15 @@ class Sink(Fixture):
             "{}handle_joint".format(self.naming_prefix)
         )
         handle_joint_qpos = deepcopy(env.sim.data.qpos[handle_joint_id])
-        handle_joint_qpos = handle_joint_qpos % (2 * np.pi)
-        if handle_joint_qpos < 0:
-            handle_joint_qpos += 2 * np.pi
+        # NOTE(dense-reward-fix): removed % 2π wrapping. Joints are limited hinge
+        # (handle: [0, 0.52], spout: [-1.57, 1.57]). Wrapping distorts values
+        # when MuJoCo contact forces push qpos slightly past limits, causing
+        # e.g. -0.1 → 6.18 (≈2π). This breaks dense reward progress tracking.
+        # Original code:
+        #   handle_joint_qpos = handle_joint_qpos % (2 * np.pi)
+        #   if handle_joint_qpos < 0:
+        #       handle_joint_qpos += 2 * np.pi
+        handle_joint_qpos = float(handle_joint_qpos)
         handle_state["handle_joint"] = handle_joint_qpos
         handle_state["water_on"] = 0.40 < handle_joint_qpos < np.pi
 
@@ -93,9 +99,11 @@ class Sink(Fixture):
             "{}spout_joint".format(self.naming_prefix)
         )
         spout_joint_qpos = deepcopy(env.sim.data.qpos[spout_joint_id])
+        # spout is bidirectional [-1.57, 1.57], spout_ori logic requires [0, 2π) range
         spout_joint_qpos = spout_joint_qpos % (2 * np.pi)
         if spout_joint_qpos < 0:
             spout_joint_qpos += 2 * np.pi
+        spout_joint_qpos = float(spout_joint_qpos)
         handle_state["spout_joint"] = spout_joint_qpos
         if np.pi <= spout_joint_qpos <= 2 * np.pi - np.pi / 6:
             spout_ori = "left"
